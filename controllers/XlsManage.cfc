@@ -1,11 +1,12 @@
 <cfcomponent>
-    <cffunction  name="verifyAndUploadXLSX" returntype ="boolean" output="false">
+    <cffunction  name="verifyAndUploadXLSX" returntype ="struct" output="false">
         <cfset local.filePath = getTempDirectory()>
         <cfset local.errors = "">
         <cfset local.success = false>
-        <cffile action="upload" destination="# local.filePath#" filefield="fileInput" result="upload" allowedExtensions="xlsx,xls" nameconflict="makeunique">
+        <cfset savedFile = "">
+        <cffile action="upload" destination="#local.filePath#" filefield="fileInput" result="upload" allowedExtensions="xlsx,xls" nameconflict="makeunique">
         <cfif upload.fileWasSaved>
-            <cfset savedFile = upload.serverDirectory & "/" & upload.serverFile>
+            <cfset savedFile = upload.serverDirectory & "\" & upload.serverFile>
             <cfif isSpreadsheetFile(savedFile)>
                 <cfspreadsheet action="read" src="#savedFile#" query="data" headerrow="1">
                 <cfset validColList = 'First Name,Last Name,Address,Email,Phone,DOB,Role,Result'>
@@ -100,21 +101,59 @@
                             </cfif>
                         </cfif>
                     </cfloop>
-
                     <cfset success = true>
                 </cfif>
             <cfelse>
                 <cfset local.errors = "The file was not an Excel file.\n">
             </cfif>
-            <cffile action="delete" file="#savedFile#">
         <cfelse>
             <cfset local.errors = "The file was not properly uploaded.\n">	
         </cfif>
-        <cfset returnData = arrayNew(1)>
-        <cfset returnData['success'] = local.success>
-        <cfset returnData['errors'] = local.errors>
-        <cfdump  var="#returnData#">
-<!---         <cfreturn returnData> --->
-        <cfabort>
+        <cfset returnData = structNew()>
+        <cfset returnData["success"] = local.success>
+        <cfset returnData["errors"] = local.errors>
+        <cfset returnData["savedFile"] = savedFile>
+        <cfif local.success>
+            <cfset returnData["spreadsheet"] = spreadsheet>
+        </cfif>
+        <cfreturn returnData>
+    </cffunction>
+    <cffunction  name="allUserDataDownload" access="remote">
+        <cfset validColList = 'First Name,Last Name,Address,Email,Phone,DOB,Role'>
+        <cfquery name="getAllUsers" datasource="userexcel">
+            select *
+            from users;
+        </cfquery>
+        <cfset spreadsheet = spreadsheetNew("All User Details") />
+        <cfset SpreadsheetSetActiveSheet(spreadsheet, "All User Details")/>
+        <cfset SpreadsheetSetCellValue(spreadsheet, "First Name",  1, 1) />
+        <cfset SpreadsheetSetCellValue(spreadsheet, "Last Name", 1, 2)/>
+        <cfset SpreadsheetSetCellValue(spreadsheet, "Address", 1, 3) />
+        <cfset SpreadsheetSetCellValue(spreadsheet, "Email", 1, 4) />
+        <cfset SpreadsheetSetCellValue(spreadsheet, "Phone", 1, 5) />
+        <cfset SpreadsheetSetCellValue(spreadsheet, "DOB", 1, 6) />
+        <cfset SpreadsheetSetCellValue(spreadsheet, "Role", 1, 7) />
+        <cfoutput>
+            <cfloop index="row" from="1" to="#getAllUsers.recordCount#">
+                <cfset SpreadsheetSetCellValue(spreadsheet, getAllUsers['fname'][row],  row+1, 1) />
+                <cfset SpreadsheetSetCellValue(spreadsheet, getAllUsers['lname'][row], row+1, 2)/>
+                <cfset SpreadsheetSetCellValue(spreadsheet, getAllUsers['address'][row], row+1, 3) />
+                <cfset SpreadsheetSetCellValue(spreadsheet, getAllUsers['email'][row], row+1, 4) />
+                <cfset SpreadsheetSetCellValue(spreadsheet, getAllUsers['phone'][row], row+1, 5) />
+                <cfset SpreadsheetSetCellValue(spreadsheet, getAllUsers['dob'][row], row+1, 6) />
+                <cfset SpreadsheetSetCellValue(spreadsheet, getAllUsers['role'][row], row+1, 7) />
+            </cfloop>
+        </cfoutput>
+        <cfheader name="Content-Disposition" value="inline; filename=All User Details.xls">
+        <cfcontent type="application/vnd.msexcel" variable="#SpreadSheetReadBinary(spreadsheet)#">
+        <cflocation  url="../pages/contact.cfm" addtoken="false"> 
+    </cffunction>
+    
+    <cffunction  name="getAllUserData" returntype ="query" output="false">
+        <cfquery name="getAllUsers" datasource="userexcel">
+            select *
+            from users;
+        </cfquery>
+        <cfreturn getAllUsers>
     </cffunction>
 </cfcomponent>

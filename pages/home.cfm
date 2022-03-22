@@ -1,12 +1,17 @@
-
+<cfset showMessage = false>
+<cfinvoke component="UserExcel.controllers.XlsManage"  method="getAllUserData" returnvariable="allUsers" >
+</cfinvoke>
 <cfif structKeyExists(form, "fileInput") and len(form.fileInput)>
     <cfinvoke component="UserExcel.controllers.XlsManage"  method="verifyAndUploadXLSX" returnvariable="resultedXlsxData" >
       <cfinvokeargument  name="formValue"  value="#form#">
     </cfinvoke>
-    <cfdump  var="#resultedXlsxData#">
-    <cfoutput>#resultedXlsxData#
-    </cfoutput>
-    <cfabort>
+    <cfset showMessage = true>
+    <cfif structKeyExists(resultedXlsxData, 'success')> 
+        <cfif resultedXlsxData.success>
+            <cfheader name="Content-Disposition" value="inline; filename=Contacts.xls">
+            <cfcontent type="application/vnd.msexcel" variable="#SpreadSheetReadBinary(resultedXlsxData.spreadsheet)#">
+        </cfif>
+    </cfif>
 </cfif>
 <html lang="en">
 <head>
@@ -21,8 +26,12 @@
     <cfoutput>
         <section>
             <div class="d-flex justify-content-around mt-5 p-3">
-                <div class="col d-flex justify-content-center"><button class="btn btn-secondary" onclick="check('Plane Template')">Plane Template</button></div>
-                <div class="col d-flex justify-content-center"><button class="btn btn-primary" onclick="check('Template with data')">Template With Data</button></div>
+                <div class="col d-flex justify-content-center">
+                    <a href="../xluploads/Plain_Template.xlsx" class="btn btn-secondary" download>Plane Template</a>
+                </div>
+                <div class="col d-flex justify-content-center">
+                    <a href="../controllers/XlsManage.cfc?method=allUserDataDownload" class="btn btn-primary">Template With Data</a>
+                </div>
                 <div class="col">
                     <form action="" method="post" enctype="multipart/form-data">
                         <div class="row">
@@ -32,13 +41,12 @@
                                     Browse
                                 </label>
                             </div>
-                            <div class="col d-flex justify-content-end">
+                            <div class="col d-flex justify-content-center">
                                 <button type="submit" class="btn btn-success" >Upload</button>
                             </div>
                         </div>
                     </form>
                 </div>
-                <div class="col d-flex justify-content-center"><button class="btn btn-danger" onclick="check('Download')">Download</button></div>
             </div>
             <div class="d-flex justify-content-center">
                 <table class="table table-bordered bg-light m-5">
@@ -54,24 +62,21 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>fname</td>
-                            <td>fname</td>
-                            <td>fname</td>
-                            <td>fname</td>
-                            <td>fname</td>
-                            <td>fname</td>
-                            <td>fname</td>
-                        </tr>
+                        <cfloop query="allUsers">
+                            <tr>
+                                <td>#fname#</td>
+                                <td>#lname#</td>
+                                <td>#address#</td>
+                                <td>#email#</td>
+                                <td>#phone#</td>
+                                <td>#dateFormat(dob, 'short') #</td>
+                                <td>#role#</td>
+                            </tr>
+                        </cfloop>
                     </tbody>
                 </table>
             </div>
         </section>
-        <script>
-            const check = (text) =>{
-                alert(text);
-            }
-        </script>
         <script src="../assets/bootstrap5/js/bootstrap.js"></script>
     </cfoutput>
 </body>

@@ -1,3 +1,13 @@
+
+<cfif structKeyExists(form, "fileInput") and len(form.fileInput)>
+    <cfinvoke component="UserExcel.controllers.XlsManage"  method="verifyAndUploadXLSX" returnvariable="resultedXlsxData" >
+      <cfinvokeargument  name="formValue"  value="#form#">
+    </cfinvoke>
+    <cfdump  var="#resultedXlsxData#">
+    <cfoutput>#resultedXlsxData#
+    </cfoutput>
+    <cfabort>
+</cfif>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8,46 +18,61 @@
     <link rel="stylesheet" href="../assets/bootstrap5/css/bootstrap.css">
 </head>
 <body>
-    <section>
-        <div class="d-flex justify-content-around mt-5 p-3">
-            <div class="col d-flex justify-content-center"><button class="btn btn-secondary" onclick="check('Plane Template')">Plane Template</button></div>
-            <div class="col d-flex justify-content-center"><button class="btn btn-primary" onclick="check('Template with data')">Template With Data</button></div>
-            <div class="col d-flex justify-content-center"><button class="btn btn-dark" onclick="check('Browse')">Browse</button></div>
-            <div class="col d-flex justify-content-center"><button class="btn btn-success" onclick="check('Upload')">Upload</button></div>
-            <div class="col d-flex justify-content-center"><button class="btn btn-danger" onclick="check('Download')">Download</button></div>
-        </div>
-        <div class="d-flex justify-content-center">
-            <table class="table table-bordered bg-light m-5">
-                <thead>
-                    <tr>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Address</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>DOB</th>
-                        <th>Role</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>fname</td>
-                        <td>fname</td>
-                        <td>fname</td>
-                        <td>fname</td>
-                        <td>fname</td>
-                        <td>fname</td>
-                        <td>fname</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </section>
-    <script>
-        const check = (text) =>{
-            alert(text);
-        }
-    </script>
-    <script src="../assets/bootstrap5/js/bootstrap.js"></script>
+    <cfoutput>
+        <section>
+            <div class="d-flex justify-content-around mt-5 p-3">
+                <div class="col d-flex justify-content-center"><button class="btn btn-secondary" onclick="check('Plane Template')">Plane Template</button></div>
+                <div class="col d-flex justify-content-center"><button class="btn btn-primary" onclick="check('Template with data')">Template With Data</button></div>
+                <div class="col">
+                    <form action="" method="post" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col d-flex justify-content-center">
+                                <label for="fileInput" class="btn btn-dark">
+                                    <input type="file" name="fileInput" id="fileInput" class="d-none">
+                                    Browse
+                                </label>
+                            </div>
+                            <div class="col d-flex justify-content-end">
+                                <button type="submit" class="btn btn-success" >Upload</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="col d-flex justify-content-center"><button class="btn btn-danger" onclick="check('Download')">Download</button></div>
+            </div>
+            <div class="d-flex justify-content-center">
+                <table class="table table-bordered bg-light m-5">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Address</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>DOB</th>
+                            <th>Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>fname</td>
+                            <td>fname</td>
+                            <td>fname</td>
+                            <td>fname</td>
+                            <td>fname</td>
+                            <td>fname</td>
+                            <td>fname</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        <script>
+            const check = (text) =>{
+                alert(text);
+            }
+        </script>
+        <script src="../assets/bootstrap5/js/bootstrap.js"></script>
+    </cfoutput>
 </body>
 </html>

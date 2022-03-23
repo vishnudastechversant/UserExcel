@@ -3,58 +3,75 @@
         <cfset local.filePath = getTempDirectory()>
         <cfset local.errors = "">
         <cfset local.success = false>
-        <cfset savedFile = "">
+        <cfset local.savedFile = "">
         <cffile action="upload" destination="#local.filePath#" filefield="fileInput" result="upload" allowedExtensions="xlsx,xls" nameconflict="makeunique">
         <cfif upload.fileWasSaved>
-            <cfset savedFile = upload.serverDirectory & "\" & upload.serverFile>
-            <cfif isSpreadsheetFile(savedFile)>
-                <cfspreadsheet action="read" src="#savedFile#" query="data" headerrow="1">
-                <cfset validColList = 'First Name,Last Name,Address,Email,Phone,DOB,Role,Result'>
-                <cfset metadata = getMetadata(data)>
-                <cfset colList = "">
-                <cfloop index="col" array="#metadata#">
-                    <cfset colList = listAppend(colList, col.name)>
-                </cfloop>
-                <cfset colList = listAppend(colList, 'Result')>
+            <cfset local.savedFile = upload.serverDirectory & "\" & upload.serverFile>
+            <cfif isSpreadsheetFile(local.savedFile)>
+                <cfspreadsheet action="read" src="#local.savedFile#" query="data" headerrow="1">
+                <cfset local.validColList = 'First Name,Last Name,Address,Email,Phone,DOB,Role,Result'>
                 <cfif data.recordCount is 1>
                     <cfset local.errors = " This spreadsheet appeared to have no data.\n">
                 <cfelse>
                     <cfset spreadsheet = spreadsheetNew("Users") />
                     <cfset SpreadsheetSetActiveSheet(spreadsheet, "Users")/>
-                    <cfloop from="1" to="#listLen(validColList)#" index="i">
-                        <cfset SpreadsheetSetCellValue(spreadsheet, listGetAt(validColList, i) ,  1, i) />
+                    <cfloop from="1" to="#listLen(local.validColList)#" index="i">
+                        <cfset SpreadsheetSetCellValue(spreadsheet, listGetAt(local.validColList, i) ,  1, i) />
                     </cfloop>
                     <cfloop index="row" from="2" to="#data.recordCount#">
-                        <cfset managedRow = "">
-                        <cfset rowValidationError = false>
-                        <cfset rowValidationErrorMsg = "">
-                        <cfloop index="col" from="1" to="#listLen(validColList)#">
-                            <cfif listGetAt(validColList, col) != 'Result'>
-                                <cfif len(data[listGetAt(validColList, col)][row]) GT 0 >
-                                    <cfset SpreadsheetSetCellValue(spreadsheet, data[listGetAt(validColList, col)][row] ,  row, col) />
+                        <cfset local.rowValidationError = false>
+                        <cfset local.rowValidationErrorMsg = "">
+                        <cfquery name="getRoles" returntype="array">
+                            select role
+                            from roles;
+                        </cfquery>
+                        <cfset local.rolesArray = arrayNew(1)>
+                        <cfloop array="#getRoles#" item="roleFromQuery">
+                            <cfset arrayAppend(local.rolesArray, roleFromQuery.role)>
+                        </cfloop>
+                        <cfloop index="col" from="1" to="#listLen(local.validColList)#">
+                            <cfif listGetAt(local.validColList, col) != 'Result'>
+                                <cfif len(data[listGetAt(local.validColList, col)][row]) GT 0 AND listGetAt(local.validColList, col) != 'Role'>
+                                    <cfset SpreadsheetSetCellValue(spreadsheet, data[listGetAt(local.validColList, col)][row] ,  row, col) />
+                                <cfelseif len(data[listGetAt(local.validColList, col)][row]) GT 0 AND listGetAt(local.validColList, col) == 'Role'>
+                                    <cfset SpreadsheetSetCellValue(spreadsheet, data[listGetAt(local.validColList, col)][row] ,  row, col) />
+                                    <cfset local.allRoleExist = true>
+                                    <cfloop list="#data[listGetAt(local.validColList, col)][row]#" item="roleFromRow">
+                                        <cfif !arrayContains(local.rolesArray, roleFromRow)>
+                                            <cfset local.allRoleExist = false>
+                                        </cfif>
+                                    </cfloop>
+                                    <cfif !local.allRoleExist>
+                                        <cfset local.rowValidationError = true>
+                                        <cfif len(local.rowValidationErrorMsg) GT 0>
+                                            <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & 'Roles are found to be incorrect'>
+                                        <cfelse>
+                                            <cfset local.rowValidationErrorMsg = 'Roles are found to be incorrect'>
+                                        </cfif>
+                                    </cfif>
                                 <cfelse>
-                                    <cfset rowValidationError = true>
-                                    <cfif len(rowValidationErrorMsg) GT 0>
-                                        <cfset rowValidationErrorMsg = rowValidationErrorMsg & ', ' & '#listGetAt(validColList, col)# is missing'>
+                                    <cfset local.rowValidationError = true>
+                                    <cfif len(local.rowValidationErrorMsg) GT 0>
+                                        <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & '#listGetAt(local.validColList, col)# is missing'>
                                     <cfelse>
-                                        <cfset rowValidationErrorMsg = '#listGetAt(validColList, col)# is missing'>
+                                        <cfset local.rowValidationErrorMsg = '#listGetAt(local.validColList, col)# is missing'>
                                     </cfif>
                                 </cfif>
                             </cfif>
                         </cfloop>
-                        <cfif rowValidationError>
-                            <cfset SpreadsheetSetCellValue(spreadsheet, rowValidationErrorMsg ,  row, 8) />
+                        <cfif local.rowValidationError>
+                            <cfset SpreadsheetSetCellValue(spreadsheet, local.rowValidationErrorMsg ,  row, 8) />
                         <cfelse>
-                            <cfquery name="userExist" datasource="userexcel">
+                            <cfquery name="userExist">
                                 select id
                                 from users
                                 where email = <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['Email'][row]#">
                             </cfquery>
-                            <cfset queryExcecuteSucceded = true>
+                            <cfset local.queryExcecuteSucceded = true>
                             <cftry>
                                 
                                 <cfif queryRecordCount(userExist) GT 0>
-                                    <cfquery name="updateUser" datasource="userexcel">
+                                    <cfquery name="updateUser">
                                         UPDATE users 
                                         SET 
                                             fname = <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['First Name'][row]#">, 
@@ -68,7 +85,7 @@
                                         WHERE users.id = <cfqueryparam cfsqltype="cf_sql_integer" value="#userExist.id#">
                                     </cfquery>
                                 <cfelse>
-                                    <cfquery name="addUser" datasource="userexcel">
+                                    <cfquery name="addUser">
                                         INSERT INTO users (
                                             fname, 
                                             lname, 
@@ -89,10 +106,10 @@
                                 </cfif>
                             <cfcatch type="any">
                                 <cfset SpreadsheetSetCellValue(spreadsheet, '#cfcatch.message#' ,  row, 8) />
-                                <cfset queryExcecuteSucceded = false>
+                                <cfset local.queryExcecuteSucceded = false>
                             </cfcatch>
                             </cftry>
-                            <cfif queryExcecuteSucceded>
+                            <cfif local.queryExcecuteSucceded>
                                 <cfif queryRecordCount(userExist) GT 0>
                                     <cfset SpreadsheetSetCellValue(spreadsheet, 'Updated' ,  row, 8) />
                                 <cfelse>
@@ -112,15 +129,15 @@
         <cfset returnData = structNew()>
         <cfset returnData["success"] = local.success>
         <cfset returnData["errors"] = local.errors>
-        <cfset returnData["savedFile"] = savedFile>
+        <cfset returnData["savedFile"] = local.savedFile>
         <cfif local.success>
             <cfset returnData["spreadsheet"] = spreadsheet>
         </cfif>
         <cfreturn returnData>
     </cffunction>
     <cffunction  name="allUserDataDownload" access="remote">
-        <cfset validColList = 'First Name,Last Name,Address,Email,Phone,DOB,Role'>
-        <cfquery name="getAllUsers" datasource="userexcel">
+        <cfset local.validColList = 'First Name,Last Name,Address,Email,Phone,DOB,Role'>
+        <cfquery name="getAllUsers">
             select *
             from users;
         </cfquery>
@@ -150,7 +167,7 @@
     </cffunction>
     
     <cffunction  name="getAllUserData" returntype ="query" output="false">
-        <cfquery name="getAllUsers" datasource="userexcel">
+        <cfquery name="getAllUsers">
             select *
             from users;
         </cfquery>

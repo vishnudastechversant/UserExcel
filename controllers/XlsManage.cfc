@@ -4,14 +4,14 @@
         <cfset local.errors = "">
         <cfset local.success = false>
         <cfset local.savedFile = "">
-        <cffile action="upload" destination="#local.filePath#" filefield="fileInput" result="upload" allowedExtensions="xlsx,xls" nameconflict="makeunique">
+        <cffile action="upload" destination="#local.filePath#" filefield="fileInput" result="upload" nameconflict="makeunique">
         <cfif upload.fileWasSaved>
             <cfset local.savedFile = upload.serverDirectory & "\" & upload.serverFile>
             <cfif isSpreadsheetFile(local.savedFile)>
                 <cfspreadsheet action="read" src="#local.savedFile#" query="data" headerrow="1">
                 <cfset local.validColList = 'First Name,Last Name,Address,Email,Phone,DOB,Role,Result'>
                 <cfif data.recordCount is 1>
-                    <cfset local.errors = " This spreadsheet appeared to have no data.\n">
+                    <cfset local.errors = " This spreadsheet appeared to have no data.<br>">
                 <cfelse>
                     <cfset spreadsheet = spreadsheetNew("Users") />
                     <cfset SpreadsheetSetActiveSheet(spreadsheet, "Users")/>
@@ -121,10 +121,10 @@
                     <cfset success = true>
                 </cfif>
             <cfelse>
-                <cfset local.errors = "The file was not an Excel file.\n">
+                <cfset local.errors = "The file was not an Excel file.<br>">
             </cfif>
         <cfelse>
-            <cfset local.errors = "The file was not properly uploaded.\n">	
+            <cfset local.errors = "The file was not properly uploaded.<br>">	
         </cfif>
         <cfset returnData = structNew()>
         <cfset returnData["success"] = local.success>
@@ -172,5 +172,10 @@
             from users;
         </cfquery>
         <cfreturn getAllUsers>
+    </cffunction>
+    <cffunction  name="downloadVerifiedExcel" access="remote">
+        <cfargument  name="spreadsheet">
+        <cfheader name="Content-Disposition" value="inline; filename=Verified Results.xls">
+        <cfcontent type="application/vnd.msexcel" variable="#SpreadSheetReadBinary(spreadsheet)#">
     </cffunction>
 </cfcomponent>

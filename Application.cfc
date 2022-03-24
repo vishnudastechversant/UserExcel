@@ -2,7 +2,8 @@ component {
 
     this.name = "User Details Excel";
     this.datasource = "userexcel";
-
+    this.STRICTNUMBERVALIDATION = false;
+    
     function onRequestStart(requestname){ 
         if(findNoCase("UserExcel",requestname) > 0 AND findNoCase("UserExcel/pages/home.cfm",requestname) == 0 AND findNoCase("UserExcel/controllers/XlsManage.cfc",requestname) == 0){
             location("/UserExcel/pages/home.cfm",false);

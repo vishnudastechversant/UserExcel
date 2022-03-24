@@ -55,20 +55,61 @@
                         </cfif>
                         <cfloop index="col" from="1" to="#listLen(local.validColList)#">
                             <cfif listGetAt(local.validColList, col) != 'Result'>
-                                <cfif len(data[listGetAt(local.validColList, col)][row]) GT 0 AND listGetAt(local.validColList, col) != 'Role'>
-                                <cfelseif len(data[listGetAt(local.validColList, col)][row]) GT 0 AND listGetAt(local.validColList, col) == 'Role'>
-                                    <cfset local.allRoleExist = true>
-                                    <cfloop list="#data[listGetAt(local.validColList, col)][row]#" item="roleFromRow">
-                                        <cfif !arrayContains(local.rolesArray, roleFromRow)>
-                                            <cfset local.allRoleExist = false>
+                                <cfif len(data[listGetAt(local.validColList, col)][row]) GT 0>
+                                    <cfif listGetAt(local.validColList, col) == 'First Name'>
+                                        <cfif !isValid("regex", data[listGetAt(local.validColList, col)][row], "^[a-zA-Z ]*$")>
+                                            <cfset local.rowValidationError = true>
+                                            <cfif len(local.rowValidationErrorMsg) GT 0>
+                                                <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & 'First Name can only have alphabets and space'>
+                                            <cfelse>
+                                                <cfset local.rowValidationErrorMsg = 'First Name can only have alphabets and space'>
+                                            </cfif>
                                         </cfif>
-                                    </cfloop>
-                                    <cfif !local.allRoleExist>
-                                        <cfset local.rowValidationError = true>
-                                        <cfif len(local.rowValidationErrorMsg) GT 0>
-                                            <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & 'Roles are found to be incorrect'>
-                                        <cfelse>
-                                            <cfset local.rowValidationErrorMsg = 'Roles are found to be incorrect'>
+                                    </cfif>
+                                    <cfif listGetAt(local.validColList, col) == 'Last Name'>
+                                        <cfif !isValid("regex", data[listGetAt(local.validColList, col)][row], "^[a-zA-Z ]*$")>
+                                            <cfset local.rowValidationError = true>
+                                            <cfif len(local.rowValidationErrorMsg) GT 0>
+                                                <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & 'Last Name can only have alphabets and space'>
+                                            <cfelse>
+                                                <cfset local.rowValidationErrorMsg = 'Last Name can only have alphabets and space'>
+                                            </cfif>
+                                        </cfif>
+                                    </cfif>
+                                    <cfif listGetAt(local.validColList, col) == 'Email'>
+                                        <cfif !isValid("email", data[listGetAt(local.validColList, col)][row])>
+                                            <cfset local.rowValidationError = true>
+                                            <cfif len(local.rowValidationErrorMsg) GT 0>
+                                                <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & 'Enter a valid Email'>
+                                            <cfelse>
+                                                <cfset local.rowValidationErrorMsg = 'Enter a valid Email'>
+                                            </cfif>
+                                        </cfif>
+                                    </cfif>
+                                    <cfif listGetAt(local.validColList, col) == 'Phone'>
+                                        <cfif !isValid("regex", data[listGetAt(local.validColList, col)][row],"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$")>
+                                            <cfset local.rowValidationError = true>
+                                            <cfif len(local.rowValidationErrorMsg) GT 0>
+                                                <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & 'Enter a valid Phone Number'>
+                                            <cfelse>
+                                                <cfset local.rowValidationErrorMsg = 'Enter a valid Phone Number'>
+                                            </cfif>
+                                        </cfif>
+                                    </cfif>
+                                    <cfif listGetAt(local.validColList, col) == 'Role'>
+                                        <cfset local.allRoleExist = true>
+                                        <cfloop list="#data[listGetAt(local.validColList, col)][row]#" item="roleFromRow">
+                                            <cfif !arrayContains(local.rolesArray, roleFromRow)>
+                                                <cfset local.allRoleExist = false>
+                                            </cfif>
+                                        </cfloop>
+                                        <cfif !local.allRoleExist>
+                                            <cfset local.rowValidationError = true>
+                                            <cfif len(local.rowValidationErrorMsg) GT 0>
+                                                <cfset local.rowValidationErrorMsg = local.rowValidationErrorMsg & ', ' & 'Roles are found to be incorrect'>
+                                            <cfelse>
+                                                <cfset local.rowValidationErrorMsg = 'Roles are found to be incorrect'>
+                                            </cfif>
                                         </cfif>
                                     </cfif>
                                 <cfelse>

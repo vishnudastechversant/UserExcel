@@ -21,7 +21,7 @@
                         <cfset SpreadsheetSetCellValue(spreadsheet, listGetAt(local.validColList, i) ,  1, i) />
                     </cfloop>
                     <cfquery name="getRoles" returntype="array">
-                        select role
+                        select *
                         from roles;
                     </cfquery>
                     <cfset local.rowValidationErrorMsg = "">
@@ -98,9 +98,16 @@
                                     </cfif>
                                     <cfif listGetAt(local.validColList, col) == 'Role'>
                                         <cfset local.allRoleExist = true>
+                                        <cfset local.roleIds = arrayNew(1)>
                                         <cfloop list="#data[listGetAt(local.validColList, col)][row]#" item="roleFromRow">
                                             <cfif !arrayContains(local.rolesArray, roleFromRow)>
                                                 <cfset local.allRoleExist = false>
+                                            <cfelse>
+                                                <cfloop array="#getRoles#" item="roleFromQuery">
+                                                    <cfif  roleFromQuery.role EQ roleFromRow>
+                                                        <cfset arrayAppend(local.roleIds,  roleFromQuery.id)>
+                                                    </cfif>
+                                                </cfloop>
                                             </cfif>
                                         </cfloop>
                                         <cfif !local.allRoleExist>
@@ -137,7 +144,7 @@
                             <cfset local.queryExcecuteSucceded = true>
                             <cftry>
                                 <cfif queryRecordCount(userExist) GT 0>
-                                    <cfquery name="updateUser">
+                                    <cfquery name="updateUser" result="updatedRow">
                                         UPDATE users 
                                         SET 
                                             fname = <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['First Name'][row]#">, 
@@ -145,13 +152,24 @@
                                             address = <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['Address'][row]#">, 
                                             email = <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['Email'][row]#">, 
                                             phone = <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['Phone'][row]#">, 
-                                            role = <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['Role'][row]#">, 
                                             dob = <cfqueryparam cfsqltype="cf_sql_timestamp" value="#data['DOB'][row]#">,
                                             updated_at = <cfqueryparam cfsqltype="cf_sql_timestamp" value="#now()#"> 
                                         WHERE users.id = <cfqueryparam cfsqltype="cf_sql_integer" value="#userExist.id#">
                                     </cfquery>
+                                    <cfquery name="removeRolesOfUser">
+                                        DELETE FROM `userroles` WHERE `user` = <cfqueryparam cfsqltype="cf_sql_integer" value="#userExist.id#">;
+                                    </cfquery>
+                                    <cfloop array="#local.roleIds#" item="roleId"> 
+                                        <cfquery name="addUserRoles">
+                                            INSERT INTO userroles (
+                                                user,role) 
+                                            VALUES (
+                                                <cfqueryparam cfsqltype="cf_sql_integer" value="#userExist.id#">, 
+                                                <cfqueryparam cfsqltype="cf_sql_integer" value="#roleId#">)
+                                        </cfquery>
+                                    </cfloop>
                                 <cfelse>
-                                    <cfquery name="addUser">
+                                    <cfquery name="addUser" result="addedUser">
                                         INSERT INTO users (
                                             fname, 
                                             lname, 
@@ -166,13 +184,21 @@
                                             <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['Address'][row]#">, 
                                             <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['Email'][row]#">, 
                                             <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['Phone'][row]#">, 
-                                            <cfqueryparam cfsqltype="cf_sql_varchar" value="#data['Role'][row]#">, 
                                             <cfqueryparam cfsqltype="cf_sql_timestamp" value="#data['DOB'][row]#">)
                                     </cfquery>
+                                    <cfloop array="#local.roleIds#" item="roleId"> 
+                                        <cfquery name="addUserRoles">
+                                            INSERT INTO userroles (
+                                                user,role) 
+                                            VALUES (
+                                                <cfqueryparam cfsqltype="cf_sql_integer" value="#addedUser.generatedKey#">, 
+                                                <cfqueryparam cfsqltype="cf_sql_integer" value="#roleId#">)
+                                        </cfquery>
+                                    </cfloop>
                                 </cfif>
                             <cfcatch type="any">
                                 <cfset local.queryExcecuteSucceded = false>
-                                <cfloop index="colIndex" from="1" to="#listLen(local.validColList)#">
+                                <cfloop index="colIndex" from="1" to="#listLen(local.validColList)-1#">
                                     <cfset SpreadsheetSetCellValue(spreadsheet, data[listGetAt(local.validColList, colIndex)][row] , local.rowsWithError, colIndex) />
                                 </cfloop>
                                 <cfset SpreadsheetSetCellValue(spreadsheet, '#cfcatch.message#' , local.rowsWithError, 8) />
@@ -211,10 +237,7 @@
     </cffunction>
     <cffunction  name="allUserDataDownload" access="remote">
         <cfset local.validColList = 'First Name,Last Name,Address,Email,Phone,DOB,Role'>
-        <cfquery name="getAllUsers">
-            select *
-            from users;
-        </cfquery>
+        <cfset getAllUsers = getAllUserData()>
         <cfset spreadsheet = spreadsheetNew("All User Details") />
         <cfset SpreadsheetSetActiveSheet(spreadsheet, "All User Details")/>
         <cfset SpreadsheetSetCellValue(spreadsheet, "First Name",  1, 1) />
@@ -231,7 +254,7 @@
             <cfset SpreadsheetSetCellValue(spreadsheet, getAllUsers['email'][row], row+1, 4) />
             <cfset SpreadsheetSetCellValue(spreadsheet, getAllUsers['phone'][row], row+1, 5) />
             <cfset SpreadsheetSetCellValue(spreadsheet, getAllUsers['dob'][row], row+1, 6) />
-            <cfset SpreadsheetSetCellValue(spreadsheet, getAllUsers['role'][row], row+1, 7) />
+            <cfset SpreadsheetSetCellValue(spreadsheet, getAllUsers['rolesassigned'][row], row+1, 7) />
         </cfloop>
         <cfheader name="Content-Disposition" value="inline; filename=All User Details.xls">
         <cfcontent type="application/vnd.msexcel" variable="#SpreadSheetReadBinary(spreadsheet)#">
@@ -240,14 +263,22 @@
     
     <cffunction  name="getAllUserData" returntype ="query" output="false">
         <cfquery name="getAllUsers">
-            select *
-            from users;
+            SELECT users.*, GROUP_CONCAT(roles.role SEPARATOR ', ')  AS rolesassigned
+            FROM
+                (
+                    (
+                        users
+                    JOIN userroles ON userroles.user = users.id
+                    )
+                JOIN roles ON userroles.role = roles.id
+                )
+            GROUP BY userroles.user;
         </cfquery>
         <cfreturn getAllUsers>
     </cffunction>
     <cffunction  name="downloadVerifiedExcel" access="remote">
         <cfargument  name="spreadsheet">
-        <cfheader name="Content-Disposition" value="inline; filename=Verified Results.xls">
+        <cfheader name="Content-Disposition" value="filename=Verified Results.xls">
         <cfcontent type="application/vnd.msexcel" variable="#SpreadSheetReadBinary(spreadsheet)#">
     </cffunction>
 </cfcomponent>

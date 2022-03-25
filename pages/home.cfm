@@ -64,7 +64,7 @@
                                 <td>#email#</td>
                                 <td>#phone#</td>
                                 <td>#dateFormat(dob, 'short') #</td>
-                                <td>#role#</td>
+                                <td>#rolesassigned#</td>
                             </tr>
                         </cfloop>
                     </tbody>
@@ -93,9 +93,6 @@
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
-                        <cfinvoke component="UserExcel.controllers.XlsManage"  method="downloadVerifiedExcel"> 
-                            <cfinvokeargument  name="spreadsheet"  value="#resultedXlsxData.spreadsheet#">
-                        </cfinvoke>
                     <cfelse>
                         <div class="alert alert-danger alert-dismissible d-flex align-items-center" role="alert">
                             <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Danger:"><use xlink:href="##exclamation-triangle-fill"/></svg>
@@ -112,3 +109,12 @@
     </cfoutput>
 </body>
 </html>
+<cfif showMessage>
+    <cfif structKeyExists(resultedXlsxData, 'success')> 
+        <cfif resultedXlsxData.success>
+            <cfinvoke component="UserExcel.controllers.XlsManage"  method="downloadVerifiedExcel"> 
+                <cfinvokeargument  name="spreadsheet"  value="#resultedXlsxData.spreadsheet#">
+            </cfinvoke>
+        </cfif>
+    </cfif>
+</cfif>

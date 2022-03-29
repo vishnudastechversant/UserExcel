@@ -218,11 +218,16 @@
                             </cfif>
                         </cfif>
                     </cfloop>
-                    <cfset success = true>
+                    <cfset local.success = true>
+                    <cfset session.success = true>
+                    <cfset session.spreadsheet = spreadsheet>
+<!---                     <cffile  action="delete" file="#local.savedFile#"> --->
+                    <cflocation  url="../pages/home.cfm?success=true" addtoken="false">
                 </cfif>
             <cfelse>
                 <cfset local.errors = "The file was not an Excel file.<br>">
             </cfif>
+        <cffile  action="delete" file="local.savedFile">
         <cfelse>
             <cfset local.errors = "The file was not properly uploaded.<br>">	
         </cfif>
@@ -277,8 +282,7 @@
         <cfreturn getAllUsers>
     </cffunction>
     <cffunction  name="downloadVerifiedExcel" access="remote">
-        <cfargument  name="spreadsheet">
-        <cfheader name="Content-Disposition" value="filename=Verified Results.xls">
-        <cfcontent type="application/vnd.msexcel" variable="#SpreadSheetReadBinary(spreadsheet)#">
+        <cfheader name="Content-Disposition" value="attachment;filename=Verified Results.xls">
+        <cfcontent type="application/vnd.msexcel" variable="#SpreadSheetReadBinary(session.spreadsheet)#" reset="false">
     </cffunction>
 </cfcomponent>
